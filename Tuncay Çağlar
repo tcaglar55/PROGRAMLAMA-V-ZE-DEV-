@@ -1,0 +1,58 @@
+import math
+import random
+import matplotlib.pyplot as plt
+
+genislik_baslangic = 20000
+genislik_bitis = genislik_baslangic + 1000
+
+hedef_konum = random.randint(genislik_baslangic, genislik_bitis)
+
+hiz_alt_sinir = 330
+hiz_ust_sinir = 1800
+hiz = (hiz_alt_sinir + hiz_ust_sinir) / 2
+
+top_konum = 10
+
+aci = math.radians(30)
+
+g = 9.81
+
+isabet_etti = False
+atis_sayisi = 0
+
+while not isabet_etti:
+
+    menzil = (hiz ** 2 * math.sin(2 * aci)) / g
+
+    sure = (2 * hiz * math.sin(aci)) / g
+
+    top_dusme_yeri = top_konum + menzil * math.cos(aci)
+
+  
+    fark = hedef_konum - top_dusme_yeri
+
+    if fark > 0:
+        print("Hedefin önünde")
+        hiz_alt_sinir = hiz
+    else:
+        print("Hedefin arkasında")
+        hiz_ust_sinir = hiz
+
+    hiz = (hiz_alt_sinir + hiz_ust_sinir) / 2
+
+    atis_sayisi += 1
+
+    if abs(fark) <= 10:
+        isabet_etti = True
+        print("Hedef vuruldu!")
+        print("Gereken atış sayısı:", atis_sayisi)
+        print("Gereken hız:", round(hiz, 2), "m/s")
+        
+        zamanlar = [i * 0.01 for i in range(int(sure * 100))]
+        yukseklikler = [top_konum + (hiz * math.sin(aci) * t) - (0.5 * g * t ** 2) for t in zamanlar]
+        mesafeler = [hiz * math.cos(aci) * t for t in zamanlar]
+        plt.plot(mesafeler, yukseklikler)
+        plt.xlabel("Mesafe (km)")
+        plt.ylabel("Yükseklik (m)")
+        plt.title("Hedef Vuruşu")
+        plt.show()
