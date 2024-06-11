@@ -1,0 +1,172 @@
+Soru 1 :
+
+
+
+import numpy as np
+
+# Örnek 32x32 boyutunda rastgele bir görüntü matrisi oluşturma
+np.random.seed(0)
+image = np.random.randint(0, 256, (32, 32), dtype=np.uint8)
+
+# Kontrast germe işlemi
+L = 256
+
+# Minimum ve maksimum piksel değerlerini bulma
+I_min = np.min(image)
+I_max = np.max(image)
+
+# Yeni piksel değerlerini hesaplama
+stretched_image = np.zeros_like(image, dtype=np.uint8)
+for i in range(image.shape[0]):
+    for j in range(image.shape[1]):
+        stretched_image[i, j] = ((image[i, j] - I_min) / (I_max - I_min)) * (L - 1)
+
+stretched_image
+
+
+
+Soru 2 : 
+
+
+
+import numpy as np
+
+# Örnek 32x32 boyutunda rastgele bir görüntü matrisi oluşturma
+np.random.seed(0)
+image = np.random.randint(0, 256, (32, 32), dtype=np.uint8)
+
+# 1. Histogramı Hesapla
+hist, bin_edges = np.histogram(image, bins=256, range=(0, 255))
+
+# 2. Kümülatif Dağılım Fonksiyonu (CDF) Hesapla
+cdf = hist.cumsum()
+
+# cdfmin hesapla (sıfır olmayan ilk değer)
+cdf_min = cdf[cdf > 0].min()
+
+# 3. CDF'yi Normalizasyon Yap
+M, N = image.shape
+L = 256
+cdf_normalized = np.round((cdf - cdf_min) / ((M * N) - cdf_min) * (L - 1)).astype(np.uint8)
+
+# 4. Yeni Piksel Değerlerini Ata
+equalized_image = cdf_normalized[image]
+
+# Ara Tabloları ve Sonucu Gösterme
+print("Histogram:\n", hist)
+print("\nKümülatif Dağılım Fonksiyonu (CDF):\n", cdf)
+print("\nNormalleştirilmiş CDF:\n", cdf_normalized)
+print("\nKontrast Eşitlenmiş Görüntü:\n", equalized_image)
+
+
+
+Soru 3:
+
+
+import numpy as np
+import pandas as pd
+
+# 1. CSV dosyasını oku ve 32x32 boyutundaki görüntü matrisini al
+file_path = 'soru3_data.csv'
+image = pd.read_csv(file_path, header=None).values
+
+# Gauss filtresini tanımla
+gauss_filter = np.array([
+    [1, 2, 1],
+    [2, 4, 2],
+    [1, 2, 1]
+]) / 16.0
+
+# Çıktı matrisi
+output_image = np.zeros((30, 30))
+
+# 3. İç içe döngüler kullanarak Gauss filtresini görüntüye uygula
+for i in range(30):
+    for j in range(30):
+        # Filtrenin merkez noktasının üzerinde olacağı 3x3 penceresini seç
+        region = image[i:i+3, j:j+3]
+        # Filtreyi uygula (çarp ve topla)
+        output_value = np.sum(region * gauss_filter)
+        output_image[i, j] = output_value
+
+output_image
+
+Soru 4 :
+import numpy as np
+
+# Histogram bilgileri
+intensity_values = np.array([100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150])
+pixel_counts = np.array([12, 18, 32, 48, 52, 65, 55, 42, 32, 16, 10, 5, 18, 25, 32, 40, 65, 43, 32, 20, 10, 4])
+
+# Başlangıç eşik değeri
+T0 = 100
+threshold = 1
+difference = float('inf')
+
+while difference >= threshold:
+    # G1 ve G2'yi ayır
+    G1 = intensity_values[intensity_values > T0]
+    G2 = intensity_values[intensity_values <= T0]
+
+    # m1 ve m2'yi hesapla
+    m1 = np.sum(G1 * pixel_counts[intensity_values > T0]) / np.sum(pixel_counts[intensity_values > T0])
+    m2 = np.sum(G2 * pixel_counts[intensity_values <= T0]) / np.sum(pixel_counts[intensity_values <= T0])
+
+    # Yeni eşik değeri T1'i hesapla
+    T1 = (m1 + m2) / 2
+
+    # Farkı hesapla
+    difference = abs(T1 - T0)
+
+    # T0'ı güncelle
+    T0 = T1
+
+# Optimum eşik değerini yazdır
+print("Optimum Eşik Değeri: ", T0)
+
+
+
+Soru 5 :
+
+
+import numpy as np
+
+# Yoğunluk değerleri ve karşılık gelen piksel sayıları
+intensity_levels = np.array([100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150])
+pixel_counts = np.array([12, 18, 32, 48, 52, 65, 55, 42, 32, 16, 10, 5, 18, 25, 32, 40, 65, 43, 32, 20, 10, 4])
+
+# Toplam piksel sayısı
+total_pixels = np.sum(pixel_counts)
+
+# Normalize edilmiş histogram (olasılık yoğunluk fonksiyonu)
+normalized_histogram = pixel_counts / total_pixels
+
+# Yoğunluk değerlerinin ortalaması
+mean_intensity = np.sum(intensity_levels * normalized_histogram)
+
+# Başlangıç değerleri
+max_variance = 0
+optimal_threshold = 0
+
+# Otsu yöntemini uygulama
+for t in range(len(intensity_levels)):
+    # Birinci sınıfın olasılığı ve ortalaması
+    weight1 = np.sum(normalized_histogram[:t+1])
+    mean1 = np.sum(intensity_levels[:t+1] * normalized_histogram[:t+1]) / weight1 if weight1 > 0 else 0
+
+    # İkinci sınıfın olasılığı ve ortalaması
+    weight2 = np.sum(normalized_histogram[t+1:])
+    mean2 = np.sum(intensity_levels[t+1:] * normalized_histogram[t+1:]) / weight2 if weight2 > 0 else 0
+
+    # Sınıflar arası varyans
+    between_class_variance = weight1 * weight2 * (mean1 - mean_intensity)**2
+
+    # Maksimum varyansı ve optimal eşik değerini güncelle
+    if between_class_variance > max_variance:
+        max_variance = between_class_variance
+        optimal_threshold = intensity_levels[t]
+
+optimal_threshold
+
+
+ÖDEV LİNKİ : https://github.com/tcaglar55/PROGRAMLAMA-V-ZE-DEV-
